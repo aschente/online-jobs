@@ -5,18 +5,59 @@
  * building robust, powerful web applications using Vue and Laravel.
  */
 
+import Vue from 'vue';
+import VueRouter from 'vue-router';
+import Vuex from 'vuex';
+import VeeValidate from 'vee-validate';
+import routes from './routes';
+import StoreData from "./store";
+import MainApp from './components/MainApp.vue';
+
 require('./bootstrap');
 
-window.Vue = require('vue');
+Vue.use(VueRouter);
+Vue.use(Vuex);
+Vue.use(VeeValidate);
 
-/**
- * Next, we will create a fresh Vue application instance and attach it to
- * the page. Then, you may begin adding components to this application
- * or customize the JavaScript scaffolding to fit your unique needs.
- */
+const store = new Vuex.Store(StoreData);
 
-Vue.component('example-component', require('./components/ExampleComponent.vue'));
+const router = new VueRouter({
+    routes,
+    mode: 'history'
+})
+
+
+router.beforeEach((to, from, next) => {
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    if (!store.getters.isLoggedIn) {
+      next({
+        name: 'login',
+      })
+    } else {
+      next()
+    }
+  } else if (to.matched.some(record => record.meta.requiresVisitor)) {
+    if (store.getters.isLoggedIn) {
+      next({
+        name: 'find-work',
+      })
+    } else {
+      next()
+    }
+  } else {
+    next() // make sure to always call next()!
+  }
+})
+
+
+//Global components
+Vue.component('alert', require('./components/general/Alert.vue'))
 
 const app = new Vue({
-    el: '#app'
+    el: '#app',
+    router,
+    store,
+    components: {
+        MainApp
+    },
 });
